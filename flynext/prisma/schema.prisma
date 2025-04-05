@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  password        String
+  firstName       String
+  lastName        String
+  profilePicture  String?
+  phoneNumber     String?
+  ownedHotels     Hotel[]
+  bookings        Booking[]
+  payments        Payment[]
+  notifications   Notification[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Hotel {
+  id              String          @id @default(uuid())
+  name            String
+  owner           User            @relation(fields: [ownerId], references: [id])
+  ownerId         String
+  address         String
+  location        Json
+  starRating      Int
+  images          HotelImage[]
+  roomTypes       RoomType[]
+  bookings        HotelBooking[]
+  amenities       HotelAmenity[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model HotelImage {
+  id        String  @id @default(uuid())
+  hotel     Hotel   @relation(fields: [hotelId], references: [id])
+  hotelId   String
+  url       String
+}
+
+model HotelAmenity {
+  id        String  @id @default(uuid())
+  hotel     Hotel   @relation(fields: [hotelId], references: [id])
+  hotelId   String
+  name      String
+}
+
+model RoomType {
+  id              String              @id @default(uuid())
+  hotel           Hotel               @relation(fields: [hotelId], references: [id])
+  hotelId         String
+  name            String
+  description     String
+  pricePerNight   Float
+  images          RoomTypeImage[]
+  amenities       RoomTypeAmenity[]
+  totalRooms      Int
+  hotelBookings   HotelBooking[]
+  createdAt       DateTime            @default(now())
+}
+
+model RoomTypeImage {
+  id          String    @id @default(uuid())
+  roomType    RoomType  @relation(fields: [roomTypeId], references: [id])
+  roomTypeId  String
+  url         String
+}
+
+model RoomTypeAmenity {
+  id          String    @id @default(uuid())
+  roomType    RoomType  @relation(fields: [roomTypeId], references: [id])
+  roomTypeId  String
+  name        String
+}
+
+model Booking {
+  id              String           @id @default(uuid())
+  user            User             @relation(fields: [userId], references: [id])
+  userId          String
+  hotelBookings   HotelBooking[]
+  flightBooking   FlightBooking[]
+  payments        Payment[]
+  status          BookingStatus    @default(Confirmed)
+  createdAt       DateTime         @default(now())
+}
+
+model HotelBooking {
+  id              String      @id @default(uuid())
+  booking         Booking     @relation(fields: [bookingId], references: [id])
+  bookingId       String     
+  hotel           Hotel       @relation(fields: [hotelId], references: [id])
+  hotelId         String
+  roomType        RoomType    @relation(fields: [roomTypeId], references: [id])
+  roomTypeId      String
+  checkIn         DateTime
+  checkOut        DateTime
+  roomsBooked     Int
+  status          BookingStatus @default(Confirmed)
+  totalPrice      Float
+}
+
+model FlightBooking {
+  id              String      @id @default(uuid())
+  booking         Booking     @relation(fields: [bookingId], references: [id])
+  bookingId       String      // Now part of one-to-many
+  bookingRef      String      
+  returnFlight    Boolean
+  status          BookingStatus @default(Confirmed)
+  lastName        String
+}
+
+model Payment {
+  id              String      @id @default(uuid())
+  booking         Booking     @relation(fields: [bookingId], references: [id])
+  bookingId       String      // Now part of one-to-many
+  user            User        @relation(fields: [userId], references: [id])
+  userId          String
+  cardLast4       String
+  cardBrand       String
+  expiryMonth     Int
+  expiryYear      Int
+  amount          Float
+  createdAt       DateTime    @default(now())
+}
+
+model Notification {
+  id              String      @id @default(uuid())
+  user            User        @relation(fields: [userId], references: [id])
+  userId          String
+  type            NotificationType
+  message         String
+  read            Boolean     @default(false)
+  createdAt       DateTime    @default(now())
+}
+
+enum BookingStatus {
+  Confirmed
+  Cancelled
+  Changed
+  Completed
+}
+
+enum NotificationType {
+  BookingConfirmation
+  Cancellation
+  Reminder
+  SystemUpdate
+}
+
+model City {
+  id              String      @id @default(uuid())
+  name            String
+  country         String
+  airports        Airport[]
+}
+
+model Airport {
+  id              String      @id @default(uuid())
+  code            String      @unique
+  name            String
+  city            City        @relation(fields: [cityId], references: [id])
+  cityId          String
+}
+
